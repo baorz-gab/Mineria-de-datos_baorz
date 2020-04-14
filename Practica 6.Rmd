@@ -1,0 +1,83 @@
+---
+title: "Practica 6: Clustering"
+output: html_notebook
+---
+
+# Preparacion de los datos
+
+```{r}
+library(readr)
+Abandono <- read.csv("~/M@C/Semestre 8/Mineria de Datos/Datos_de_Seguridad_Alimentaria_S_Todos_los_Datos/Tasa de abandono escolar 2018-19.csv", row.names=1)
+str(Abandono)
+```
+Vamos a preparas nuestros datos, para poder realizar el cluster y calcular nuestra matriz de distancia
+```{r}
+abandono = na.omit(Abandono)
+abandono= scale(abandono)
+head(abandono, n=3)
+```
+
+Vamos a cargar nuestras librerias 
+```{r}
+library(cluster)
+library(factoextra)
+```
+
+# Matriz de distancias
+
+Es sencillo calcular y visualizar la matriz de distancias utilizando las funciones get_dist () y fviz_dist () en el paquete factoextra r:
+
+Get_dist (): para calcular una matriz de distancia entre las filas de una matriz de datos. Comparado con la función dist () estándar, soporta medidas de distancia basadas en la correlación incluyendo los métodos “pearson”, “kendall” y “spearman”.
+
+Fviz_dist (): para visualizar una matriz de distancia
+
+```{r}
+res.dist <- get_dist(abandono, stand = TRUE, method = "pearson")
+fviz_dist(res.dist, gradient = list(low = "#00AFBB", mid = "white", high = "#FC4E07"))
+```
+
+El nivel de color es proporcional al valor de la diferencia entre las observaciones: rojo si d(x,y)=0 y azul si dist(x,y)=1. Los objetos que pertenecen al mismo cluster se visualizan en orden consecutivo.
+
+# Particionando el cluster
+
+Los algoritmos de partición son enfoques de agrupamiento que dividen los conjuntos de datos, que contienen n observaciones, en un conjunto de k grupos (es decir, conglomerados). Los algoritmos requieren que el analista especifique el número de clústeres que se generarán.
+
+## Determinacion optima del numero de cluster
+
+```{r}
+fviz_nbclust(abandono, kmeans, method = "gap_stat")
+```
+Nbclust: un paquete que proporciona 30 índices para determinar el mejor número de clusters
+
+```{r}
+library(NbClust)
+set.seed(123)
+res.nbclust <- NbClust(abandono, distance = "euclidean",
+                  min.nc = 2, max.nc = 10, 
+                  method = "complete", index ="all") 
+```
+```{r}
+factoextra::fviz_nbclust(res.nbclust)
+```
+## Estadisticas de validacion de clusters
+
+Se ha propuesto una variedad de medidas en la literatura para evaluar los resultados de la agrupación. El término validación de agrupamiento se utiliza para diseñar el procedimiento de evaluación de los resultados de un algoritmo de agrupación.
+
+```{r}
+my_data <- scale(iris[, -5])
+res.hc <- eclust(abandono, "hclust", k = 4, graph = FALSE) 
+# Visualize
+fviz_dend(res.hc, rect = TRUE, show_labels = FALSE)
+```
+## Cluster kmeans
+
+```{r}
+km.res <- kmeans(abandono, 2, nstart = 25)
+fviz_cluster(km.res, data = abandono, frame.type = "convex")
+```
+## Cluster PAM
+
+```{r}
+pam.res <- pam(abandono, 4)
+fviz_cluster(pam.res)
+```
